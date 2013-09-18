@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/x11-themes/greybird/greybird-1.1.1.ebuild,v 1.1 2013/05/04 07:32:19 ssuominen Exp $
+# $Header: /var/cvsroot/gentoo-x86/x11-themes/greybird/greybird-1.2.1.ebuild,v 1.1 2013/09/10 14:34:21 ssuominen Exp $
 
 EAPI=5
 
@@ -15,8 +15,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
 IUSE="ayatana gnome"
 
-RDEPEND=">=x11-themes/gtk-engines-murrine-0.90
-	>=x11-themes/gtk-engines-unico-1.0.2"
+RDEPEND=">=x11-themes/gtk-engines-murrine-0.90"
 DEPEND=""
 
 RESTRICT="binchecks strip"
