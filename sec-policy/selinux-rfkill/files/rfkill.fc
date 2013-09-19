@@ -1,0 +1,1 @@
+/usr/sbin/rfkill	--	gen_context(system_u:object_r:rfkill_exec_t,s0)

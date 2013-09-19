@@ -1,0 +1,16 @@
+policy_module(rfkill, 1.0.0)
+
+type rfkill_t;
+type rfkill_exec_t;
+
+application_domain(rfkill_t, rfkill_exec_t)
+
+# allow terminal output
+userdom_use_user_terminals(rfkill_t)
+domain_use_interactive_fds(rfkill_t)
+
+# allow rw access to /dev/rfkill
+dev_rw_wireless(rfkill_t)
+
+# needed so it shows device names
+dev_read_sysfs(rfkill_t)

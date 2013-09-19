@@ -1,0 +1,8 @@
+interface(`rfkill_role',`
+	gen_require(`
+		type rfkill_t, rfkill_exec_t;
+	')
+
+	role $1 types rfkill_t;
+	domtrans_pattern($2, rfkill_exec_t, rfkill_t)
+')
