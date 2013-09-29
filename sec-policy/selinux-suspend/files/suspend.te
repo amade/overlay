@@ -1,0 +1,46 @@
+policy_module(suspend, 1.0.0)
+
+########################################
+#
+# Declarations
+#
+
+type suspend_t;
+type suspend_exec_t;
+
+application_domain(suspend_t, suspend_exec_t)
+
+type suspend_conf_t;
+files_config_file(suspend_conf_t)
+allow suspend_t suspend_conf_t:file read_file_perms;
+
+# allow user terminal output
+userdom_use_user_terminals(suspend_t)
+domain_use_interactive_fds(suspend_t)
+
+# s2disk: Could not lock myself. Reason: Cannot allocate memory
+allow suspend_t self:capability ipc_lock;
+# s2disk: Could not mount tmpfs on /proc/$pid. Reason: Permission denied
+allow suspend_t self:dir mounton;
+# s2disk: Could not mount tmpfs on /proc/$pid. Reason: Operation not permitted
+allow suspend_t self:capability sys_admin;
+
+
+# s2disk: Could not mount tmpfs on /proc/$pid. Reason: Permission denied
+fs_mount_tmpfs(suspend_t)
+# otherwise leaves mounted stuff on /proc/$pid
+fs_unmount_tmpfs(suspend_t)
+# it may need a bit less than it's allowed by this macro
+fs_manage_tmpfs_blk_files(suspend_t)
+
+# s2disk: Could not stat the resume device file. Reason: Permission denied
+storage_getattr_fixed_disk_dev(suspend_t)
+
+# s2disk prints stuff on console
+term_write_console(suspend_t)
+term_read_console(suspend_t)
+term_use_all_terms(suspend_t)
+allow suspend_t self:capability sys_tty_config;
+
+# allow /dev/snapshot access (it seems to be named apm_bios for legacy reasons)
+dev_rw_apm_bios(suspend_t)

@@ -1,0 +1,9 @@
+interface(`suspend_role',`
+	gen_require(`
+		type suspend_t, suspend_exec_t;
+	')
+
+	role $1 types suspend_t;
+	domtrans_pattern($2, suspend_exec_t, suspend_t)
+')
+
