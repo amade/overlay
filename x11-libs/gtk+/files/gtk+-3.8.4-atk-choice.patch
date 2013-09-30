@@ -1,0 +1,42 @@
+diff -uNr a/configure b/configure
+--- a/configure	2013-09-29 23:13:45.802657734 +0200
++++ b/configure	2013-09-29 23:17:59.230661763 +0200
+@@ -24136,7 +24136,7 @@
+ ########################################
+ 
+ if test x$enable_x11_backend = xyes; then
+-   ATK_PACKAGES="atk atk-bridge-2.0"
++   ATK_PACKAGES="atk"
+ else
+    ATK_PACKAGES="atk"
+ fi
+diff -uNr a/gtk/a11y/gtkaccessibility.c b/gtk/a11y/gtkaccessibility.c
+--- a/gtk/a11y/gtkaccessibility.c	2013-09-29 23:13:45.629657732 +0200
++++ b/gtk/a11y/gtkaccessibility.c	2013-09-29 23:18:23.380662147 +0200
+@@ -37,7 +37,7 @@
+ #include <gtk/gtkcombobox.h>
+ #include <gtk/gtkaccessible.h>
+ 
+-#ifdef GDK_WINDOWING_X11
++#if 0
+ #include <atk-bridge.h>
+ #endif
+ 
+@@ -989,7 +989,7 @@
+ 
+   g_clear_object (&atk_misc_instance);
+ 
+-#ifdef GDK_WINDOWING_X11
++#if 0
+   atk_bridge_adaptor_cleanup ();
+ #endif
+ 
+@@ -1011,7 +1011,7 @@
+   _gtk_accessibility_override_atk_util ();
+   do_window_event_initialization ();
+ 
+-#ifdef GDK_WINDOWING_X11
++#if 0
+   atk_bridge_adaptor_init (NULL, NULL);
+ #endif
+ 
