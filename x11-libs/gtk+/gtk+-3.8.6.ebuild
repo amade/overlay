@@ -1,9 +1,8 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/x11-libs/gtk+/gtk+-3.8.4.ebuild,v 1.2 2013/09/08 17:42:12 eva Exp $
+# $Header: /var/cvsroot/gentoo-x86/x11-libs/gtk+/gtk+-3.8.6.ebuild,v 1.2 2013/10/19 12:39:36 pacho Exp $
 
 EAPI="5"
-
 inherit eutils flag-o-matic gnome.org gnome2-utils multilib virtualx
 
 DESCRIPTION="Gimp ToolKit +"
@@ -16,7 +15,7 @@ SLOT="3"
 #  * http://mail.gnome.org/archives/gtk-devel-list/2010-November/msg00099.html
 # I tried this and got it all compiling, but the end result is unusable as it
 # horribly mixes up the backends -- grobian
-IUSE="accessibility aqua colord cups debug examples +introspection packagekit test vim-syntax wayland X xinerama"
+IUSE="accessibility aqua colord cups dbus debug examples +introspection packagekit test vim-syntax wayland X xinerama"
 REQUIRED_USE="
 	|| ( aqua wayland X )
 	xinerama? ( X )"
@@ -63,6 +62,9 @@ DEPEND="${COMMON_DEPEND}
 	app-text/docbook-xsl-stylesheets
 	app-text/docbook-xml-dtd:4.1.2
 	dev-libs/libxslt
+	dbus? (
+		dev-util/gdbus-codegen
+	)
 	virtual/pkgconfig
 	X? (
 		x11-proto/xextproto
@@ -109,6 +111,13 @@ src_prepare() {
 	if ! use accessibility; then
 		epatch "${FILESDIR}/${PN}-3.8.4-atk-choice.patch"
 	fi
+	if ! use dbus; then
+		epatch "${FILESDIR}/${PN}-3.8.6-no-dbus.patch"
+	fi
+
+	# This files shouldn't be in tarball, upstream bug #709974
+	# This needs dev-util/gdbus-codegen in DEPEND
+	rm -f gtk/gtkdbusgenerated.{h,c} || die
 
 	if use test; then
 		# Non-working test in gentoo's env
@@ -123,7 +132,13 @@ src_prepare() {
 			-i tests/Makefile.* || die "sed 3 failed"
 
 		# Test results depend on the list of mounted filesystems!
-		rm -v tests/a11y/pickers.{ui,txt} || die "rm failed"
+		rm -f tests/a11y/pickers.{ui,txt} || die "rm failed"
+
+		# Skip failing tests, upstream bug #698448
+		epatch "${FILESDIR}/${PN}-3.8.6-skip-filechooser-test.patch"
+
+		# https://bugzilla.gnome.org/show_bug.cgi?id=710467
+		rm -f tests/a11y/buttons.{ui,txt} || die
 	else
 		# don't waste time building tests
 		strip_builddir SRC_SUBDIRS tests Makefile.am

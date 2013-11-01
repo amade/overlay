@@ -1,0 +1,294 @@
+diff -uNr a/gtk/Makefile.am b/gtk/Makefile.am
+--- a/gtk/Makefile.am	2013-10-31 18:20:25.333509265 +0100
++++ b/gtk/Makefile.am	2013-10-31 18:24:43.476503564 +0100
+@@ -887,15 +887,6 @@
+ gtk_c_sources = $(gtk_base_c_sources)
+ gtk_all_c_sources = $(gtk_base_c_sources)
+ 
+-gtk_dbus_built_sources = gtkdbusgenerated.c gtkdbusgenerated.h
+-
+-$(gtk_dbus_built_sources) : Makefile.am gtkdbusinterfaces.xml
+-	$(AM_V_GEN) gdbus-codegen \
+-	--interface-prefix org.Gtk. \
+-	--c-namespace _Gtk \
+-	--generate-c-code gtkdbusgenerated \
+-	$(srcdir)/gtkdbusinterfaces.xml
+-
+ gtk_os_unix_c_sources = 		\
+ 	gtkcustompaperunixdialog.c	\
+ 	gtkpagesetupunixdialog.c	\
+@@ -907,8 +898,7 @@
+ 	gtkprintoperation-unix.c	\
+ 	gtkprintunixdialog.c		\
+         gtkprintbackend.c		\
+-	gtksearchenginetracker.c        \
+-	$(gtk_dbus_built_sources)
++	gtksearchenginetracker.c 
+ gtk_all_c_sources += $(gtk_os_unix_c_sources)
+ if OS_UNIX
+ gtk_private_h_sources += \
+@@ -920,8 +910,6 @@
+ 	gtkprinteroptionwidget.h	\
+ 	gtksearchenginetracker.h
+ gtk_c_sources += $(gtk_os_unix_c_sources)
+-else
+-gtk_c_sources += $(gtk_dbus_built_sources)
+ endif
+ 
+ gtk_os_win32_c_sources = \
+@@ -1025,14 +1013,12 @@
+ 
+ # built headers that don't get installed
+ gtk_built_private_headers =			\
+-	gtkdbusgenerated.h			\
+ 	gtkresources.h				\
+ 	gtkmarshalers.h				\
+ 	gtkbuiltincache.h			\
+ 	gtkprivatetypebuiltins.h
+ 
+ gtk_built_sources =				\
+-	gtkdbusgenerated.c			\
+ 	gtkresources.c				\
+ 	gtktypebuiltins.c			\
+ 	gtktypefuncs.c				\
+@@ -1206,7 +1192,7 @@
+ dist-hook: ../build/win32/vs9/gtk.vcproj ../build/win32/vs10/gtk.vcxproj ../build/win32/vs10/gtk.vcxproj.filters
+ 
+ ../build/win32/vs9/gtk.vcproj: ../build/win32/vs9/gtk.vcprojin
+-	for F in `echo $(gtk_base_c_sources) $(gtk_os_win32_c_sources) $(gtk_use_win32_c_sources) $(gtk_dbus_built_sources) | tr '/' '\\'`; do \
++	for F in `echo $(gtk_base_c_sources) $(gtk_os_win32_c_sources) $(gtk_use_win32_c_sources) | tr '/' '\\'`; do \
+ 		case $$F in \
+ 		*.c) echo '   <File RelativePath="..\..\..\gtk\'$$F'" />' \
+ 		     ;; \
+@@ -1216,7 +1202,7 @@
+ 	rm libgtk.sourcefiles
+ 
+ ../build/win32/vs10/gtk.vcxproj: ../build/win32/vs10/gtk.vcxprojin
+-	for F in `echo $(gtk_base_c_sources) $(gtk_os_win32_c_sources) $(gtk_use_win32_c_sources) $(gtk_dbus_built_sources) | tr '/' '\\'`; do \
++	for F in `echo $(gtk_base_c_sources) $(gtk_os_win32_c_sources) $(gtk_use_win32_c_sources) | tr '/' '\\'`; do \
+ 		case $$F in \
+ 		*.c) echo '   <ClCompile Include="..\..\..\gtk\'$$F'" />' \
+ 		     ;; \
+@@ -1702,7 +1688,6 @@
+ 	gtkprint-win32.c	\
+ 	gtksearchenginequartz.h \
+ 	gtk.gresource.xml	\
+-	gtkdbusinterfaces.xml	\
+ 	gtk-default.css		\
+ 	gtk-keys.css.default	\
+ 	gtk-keys.css.emacs	\
+diff -uNr a/gtk/gtkmountoperation.c b/gtk/gtkmountoperation.c
+--- a/gtk/gtkmountoperation.c	2013-10-31 18:20:25.266509267 +0100
++++ b/gtk/gtkmountoperation.c	2013-10-31 18:25:09.437502991 +0100
+@@ -29,7 +29,9 @@
+ 
+ #include "gtkmountoperationprivate.h"
+ #include "gtkbox.h"
++#if 0
+ #include "gtkdbusgenerated.h"
++#endif
+ #include "gtkentry.h"
+ #include "gtkbox.h"
+ #include "gtkintl.h"
+@@ -50,7 +52,9 @@
+ #include "gtkimagemenuitem.h"
+ #include "gtkmain.h"
+ 
++#if 0
+ #include <glib/gprintf.h>
++#endif
+ 
+ /**
+  * SECTION:filesystem
+@@ -118,10 +122,12 @@
+   GtkDialog *dialog;
+   GdkScreen *screen;
+ 
++#if 0
+   /* bus proxy */
+   _GtkMountOperationHandler *handler;
+   GCancellable *cancellable;
+   gboolean handler_showing;
++#endif
+ 
+   /* for the ask-password dialog */
+   GtkWidget *grid;
+@@ -185,12 +191,14 @@
+ static void
+ gtk_mount_operation_init (GtkMountOperation *operation)
+ {
++#if 0
+   gchar *name_owner;
++#endif
+ 
+   operation->priv = G_TYPE_INSTANCE_GET_PRIVATE (operation,
+                                                  GTK_TYPE_MOUNT_OPERATION,
+                                                  GtkMountOperationPrivate);
+-
++#if 0
+   operation->priv->handler =
+     _gtk_mount_operation_handler_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                          G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
+@@ -204,6 +212,7 @@
+ 
+   if (operation->priv->handler)
+     g_dbus_proxy_set_default_timeout (G_DBUS_PROXY (operation->priv->handler), G_MAXINT);
++#endif
+ }
+ 
+ static void
+@@ -221,8 +230,10 @@
+   if (priv->screen)
+     g_object_unref (priv->screen);
+ 
++#if 0
+   if (priv->handler)
+     g_object_unref (priv->handler);
++#endif
+ 
+   G_OBJECT_CLASS (gtk_mount_operation_parent_class)->finalize (object);
+ }
+@@ -268,7 +279,11 @@
+       break;
+ 
+     case PROP_IS_SHOWING:
++#if 0
+       g_value_set_boolean (value, priv->dialog != NULL || priv->handler_showing);
++#else
++      g_value_set_boolean (value, priv->dialog != NULL);
++#endif
+       break;
+ 
+     case PROP_SCREEN:
+@@ -281,6 +296,7 @@
+     }
+ }
+ 
++#if 0
+ static void
+ gtk_mount_operation_proxy_finish (GtkMountOperation     *op,
+                                   GMountOperationResult  result)
+@@ -295,6 +311,7 @@
+   /* drop the reference acquired when calling the proxy method */
+   g_object_unref (op);
+ }
++#endif
+ 
+ static void
+ remember_button_toggled (GtkToggleButton   *button,
+@@ -726,6 +743,7 @@
+   g_object_ref (operation);
+ }
+ 
++#if 0
+ static void
+ call_password_proxy_cb (GObject      *source,
+                         GAsyncResult *res,
+@@ -786,6 +804,7 @@
+                                                   operation->priv->ask_flags, NULL,
+                                                   call_password_proxy_cb, operation);
+ }
++#endif
+ 
+ static void
+ gtk_mount_operation_ask_password (GMountOperation   *mount_op,
+@@ -802,6 +821,7 @@
+   priv = operation->priv;
+   priv->ask_flags = flags;
+ 
++#if 0
+   use_gtk = (operation->priv->handler == NULL) ||
+     (priv->ask_flags & G_ASK_PASSWORD_NEED_DOMAIN) ||
+     (priv->ask_flags & G_ASK_PASSWORD_NEED_USERNAME);
+@@ -810,6 +830,9 @@
+     gtk_mount_operation_ask_password_do_gtk (operation, message, default_user, default_domain);
+   else
+     gtk_mount_operation_ask_password_do_proxy (operation, message, default_user, default_domain);
++#else
++    gtk_mount_operation_ask_password_do_gtk (operation, message, default_user, default_domain);
++#endif
+ }
+ 
+ static void
+@@ -893,6 +916,7 @@
+   g_object_ref (op);
+ }
+ 
++#if 0
+ static void
+ call_question_proxy_cb (GObject      *source,
+                         GAsyncResult *res,
+@@ -949,6 +973,7 @@
+                                                   choices, NULL,
+                                                   call_question_proxy_cb, operation);
+ }
++#endif
+ 
+ static void
+ gtk_mount_operation_ask_question (GMountOperation *op,
+@@ -959,12 +984,16 @@
+   gboolean use_gtk;
+ 
+   operation = GTK_MOUNT_OPERATION (op);
++#if 0
+   use_gtk = (operation->priv->handler == NULL);
+ 
+   if (use_gtk)
+     gtk_mount_operation_ask_question_do_gtk (operation, message, choices);
+   else
+     gtk_mount_operation_ask_question_do_proxy (operation, message, choices);
++#else
++    gtk_mount_operation_ask_question_do_gtk (operation, message, choices);
++#endif
+ }
+ 
+ static void
+@@ -1510,6 +1539,7 @@
+   return dialog;
+ }
+ 
++#if 0
+ static void
+ call_processes_proxy_cb (GObject     *source,
+                         GAsyncResult *res,
+@@ -1576,6 +1606,7 @@
+                                                     choices, NULL,
+                                                     call_processes_proxy_cb, operation);
+ }
++#endif
+ 
+ static void
+ gtk_mount_operation_show_processes_do_gtk (GtkMountOperation *op,
+@@ -1623,12 +1654,16 @@
+   gboolean use_gtk;
+ 
+   operation = GTK_MOUNT_OPERATION (op);
++#if 0
+   use_gtk = (operation->priv->handler == NULL);
+ 
+   if (use_gtk)
+     gtk_mount_operation_show_processes_do_gtk (operation, message, processes, choices);
+   else
+     gtk_mount_operation_show_processes_do_proxy (operation, message, processes, choices);
++#else
++    gtk_mount_operation_show_processes_do_gtk (operation, message, processes, choices);
++#endif
+ }
+ 
+ static void
+@@ -1646,6 +1681,7 @@
+       g_object_unref (op);
+     }
+ 
++#if 0
+   if (priv->handler != NULL)
+     {
+       _gtk_mount_operation_handler_call_close (priv->handler, NULL, NULL, NULL);
+@@ -1653,6 +1689,7 @@
+       priv->handler_showing = FALSE;
+       g_object_notify (G_OBJECT (op), "is-showing");
+     }
++#endif
+ }
+ 
+ /**
