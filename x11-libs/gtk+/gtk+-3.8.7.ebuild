@@ -112,7 +112,7 @@ src_prepare() {
 		epatch "${FILESDIR}/${PN}-3.8.4-atk-choice.patch"
 	fi
 	if ! use dbus; then
-		epatch "${FILESDIR}/${PN}-3.8.6-no-dbus.patch"
+		epatch "${FILESDIR}/${PN}-3.8.7-no-dbus.patch"
 	fi
 
 	# This files shouldn't be in tarball, upstream bug #709974
