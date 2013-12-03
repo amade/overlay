@@ -16,9 +16,10 @@ LICENSE="BSD-2"
 SLOT="0"
 KEYWORDS="~alpha ~amd64 ~hppa ~ppc ~ppc64 ~sparc ~x86 ~x86-fbsd ~x86-freebsd ~x86-interix ~amd64-linux ~x86-linux"
 
-IUSE="chardet dbus nls"
+IUSE="chardet dbus nls thunar"
 
 RDEPEND="dbus? ( >=dev-libs/dbus-glib-0.60 )
+	thunar? ( xfce-base/thunar )
 	>=dev-libs/glib-2.28
 	dev-libs/libxml2
 	>=x11-libs/cairo-1.2.6
@@ -36,7 +37,8 @@ src_configure() {
 	econf \
 		$(use_enable dbus) \
 		$(use_enable chardet) \
-		$(use_enable nls)
+		$(use_enable nls) \
+		$(use_enable thunar)
 }
 
 src_install() {
