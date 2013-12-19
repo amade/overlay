@@ -1,0 +1,23 @@
+diff -uNr a/util-linux/mdev.c b/util-linux/mdev.c
+--- a/util-linux/mdev.c	2013-12-07 14:47:24.122978065 +0100
++++ b/util-linux/mdev.c	2013-12-07 14:47:51.875977453 +0100
+@@ -776,6 +776,19 @@
+ 			}
+ 			if (mknod(node_name, rule->mode | type, makedev(major, minor)) && errno != EEXIST)
+ 				bb_perror_msg("can't create '%s'", node_name);
++
++#if ENABLE_SELINUX
++			/* relabel file, don't care if it existed before or was just created */
++			if (is_selinux_enabled()) {
++				security_context_t scontext = NULL;
++				char *node_path = xasprintf("/dev/%s", node_name);
++
++				if (matchpathcon(node_path, rule->mode | type, &scontext) == 0)
++					setfilecon(node_path, scontext);
++				freecon(scontext);
++			}
++#endif
++
+ 			if (ENABLE_FEATURE_MDEV_CONF) {
+ 				chmod(node_name, rule->mode);
+ 				chown(node_name, rule->ugid.uid, rule->ugid.gid);
