@@ -9,7 +9,8 @@ IUSE="+peer_perms +open_perms +ubac +unconfined doc"
 
 DESCRIPTION="Gentoo base policy for SELinux"
 HOMEPAGE="http://www.gentoo.org/proj/en/hardened/selinux/"
-EGIT_REPO_URI="git://git.overlays.gentoo.org/proj/hardened-refpolicy.git"
+EGIT_REPO_URI="https://github.com/amade/hardened-refpolicy.git";
+EGIT_BRANCH="local-changes"
 EGIT_SOURCEDIR="${WORKDIR}/refpolicy"
 LICENSE="GPL-2"
 SLOT="0"
