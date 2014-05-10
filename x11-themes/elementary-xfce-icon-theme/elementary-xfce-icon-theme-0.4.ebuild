@@ -8,7 +8,7 @@ MY_PN="elementary-xfce"
 
 DESCRIPTION="Elementary icons forked from upstream, extended and maintained for Xfce"
 HOMEPAGE="http://github.com/shimmerproject/elementary-xfce"
-SRC_URI="http://github.com/shimmerproject/${MY_PN}/archive/v${PV}.tar.gz"
+SRC_URI="http://github.com/shimmerproject/${MY_PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="amd64 x86"
@@ -21,7 +21,7 @@ RESTRICT="binchecks strip"
 
 src_unpack() {
 	unpack ${A}
-	mv ${MY_PN}-${PV} "${S}"
+	mv ${MY_PN}-* "${S}"
 }
 
 src_install() {
