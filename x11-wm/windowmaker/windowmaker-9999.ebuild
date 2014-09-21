@@ -58,7 +58,7 @@ src_configure() {
 	myconf="--enable-xpm $(use_enable png) $(use_enable jpeg) $(use_enable gif) $(use_enable tiff)"
 
 	# non required X capabilities
-	myconf="${myconf} $(use_enable modelock) $(use_enable xrandr) $(use_enable xinerama)"
+	myconf="${myconf} $(use_enable modelock) $(use_enable xrandr randr) $(use_enable xinerama)"
 
 	if use nls; then
 		[[ -z $LINGUAS ]] && export LINGUAS="`ls po/*.po | sed 's:po/\(.*\)\.po$:\1:'`"
