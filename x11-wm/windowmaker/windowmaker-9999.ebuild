@@ -16,6 +16,8 @@ LICENSE="GPL-2"
 IUSE="gif imagemagick jpeg modelock nls png tiff webp xinerama xrandr"
 KEYWORDS="amd64 ~amd64"
 
+WANT_AUTOMAKE=1.13
+
 DEPEND="media-libs/fontconfig
 	>=x11-libs/libXft-2.1.0
 	x11-libs/libXmu
@@ -74,7 +76,7 @@ src_configure() {
 		--with-x \
 		--enable-usermenu \
 		--with-pixmapdir="${EPREFIX}"/usr/share/pixmaps \
-		--with-nlsdir="${EPREFIX}"/usr/share/locale \
+		--localedir="${EPREFIX}"/usr/share/locale \
 		${myconf}
 
 	cd ../WindowMaker-extra-0.1
