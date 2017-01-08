@@ -1,7 +1,7 @@
 diff -uNr a/configure b/configure
---- a/configure	2015-07-25 13:29:06.196223790 +0200
-+++ b/configure	2015-07-25 13:29:18.752223990 +0200
-@@ -25039,7 +25039,7 @@
+--- a/configure	2017-01-07 13:52:36.814053118 +0100
++++ b/configure	2017-01-07 13:53:05.475054662 +0100
+@@ -26897,7 +26897,7 @@
  ########################################
  
  if test x$enable_x11_backend = xyes; then
@@ -11,9 +11,9 @@ diff -uNr a/configure b/configure
     ATK_PACKAGES="atk"
  fi
 diff -uNr a/configure.ac b/configure.ac
---- a/configure.ac	2015-07-25 13:29:05.754223783 +0200
-+++ b/configure.ac	2015-07-25 13:29:30.780224181 +0200
-@@ -1327,7 +1327,7 @@
+--- a/configure.ac	2017-01-07 13:52:36.815053118 +0100
++++ b/configure.ac	2017-01-07 13:53:05.475054662 +0100
+@@ -1371,7 +1371,7 @@
  ########################################
  
  if test x$enable_x11_backend = xyes; then
@@ -23,8 +23,8 @@ diff -uNr a/configure.ac b/configure.ac
     ATK_PACKAGES="atk"
  fi
 diff -uNr a/gtk/a11y/gtkaccessibility.c b/gtk/a11y/gtkaccessibility.c
---- a/gtk/a11y/gtkaccessibility.c	2015-07-25 13:29:05.419223778 +0200
-+++ b/gtk/a11y/gtkaccessibility.c	2015-07-25 13:29:18.753223990 +0200
+--- a/gtk/a11y/gtkaccessibility.c	2017-01-07 13:52:36.798053117 +0100
++++ b/gtk/a11y/gtkaccessibility.c	2017-01-07 13:53:05.225054649 +0100
 @@ -37,7 +37,7 @@
  #include <gtk/gtktogglebutton.h>
  #include <gtk/gtkaccessible.h>
@@ -34,7 +34,7 @@ diff -uNr a/gtk/a11y/gtkaccessibility.c b/gtk/a11y/gtkaccessibility.c
  #include <atk-bridge.h>
  #endif
  
-@@ -987,7 +987,7 @@
+@@ -988,7 +988,7 @@
    _gtk_accessibility_override_atk_util ();
    do_window_event_initialization ();
  
