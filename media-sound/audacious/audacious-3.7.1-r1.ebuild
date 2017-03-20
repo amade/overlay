@@ -63,7 +63,7 @@ src_configure() {
 	# will not be added due to the bug reports that will result.
 	# Bugs #197894, #199069, #207330, #208606
 	econf \
-		$(use_enable dbus)
+		$(use_enable dbus) \
 		${gtk} \
 		$(use_enable chardet) \
 		$(use_enable nls) \
