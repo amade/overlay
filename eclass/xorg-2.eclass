@@ -1,6 +1,5 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 # @ECLASS: xorg-2.eclass
 # @MAINTAINER:
@@ -101,7 +100,7 @@ fi
 : ${XORG_PACKAGE_NAME:=${PN}}
 
 if [[ -n ${GIT_ECLASS} ]]; then
-	: ${EGIT_REPO_URI:="git://anongit.freedesktop.org/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME} http://anongit.freedesktop.org/git/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME}"}
+	: ${EGIT_REPO_URI:="https://anongit.freedesktop.org/git/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME}.git"}
 elif [[ -n ${XORG_BASE_INDIVIDUAL_URI} ]]; then
 	SRC_URI="${XORG_BASE_INDIVIDUAL_URI}/${XORG_MODULE}${P}.tar.bz2"
 fi
@@ -425,7 +424,7 @@ xorg-2_flags_setup() {
 	# Win32 require special define
 	[[ ${CHOST} == *-winnt* ]] && append-cppflags -DWIN32 -D__STDC__
 	# hardened ldflags
-	[[ ${PN} = xorg-server || -n ${DRIVER} ]] && append-ldflags -Wl,-z,relro,-z,lazy
+	[[ ${PN} = xorg-server || -n ${DRIVER} ]] && append-ldflags -Wl,-z,relro,-z,now
 
 	# Quite few libraries fail on runtime without these:
 	if has static-libs ${IUSE//+}; then
