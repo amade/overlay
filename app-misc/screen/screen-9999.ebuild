@@ -4,7 +4,7 @@
 
 EAPI=6
 
-EGIT_REPO_URI="git://git.savannah.gnu.org/screen.git"
+EGIT_REPO_URI="https://git.savannah.gnu.org/git/screen.git"
 EGIT_CHECKOUT_DIR="${WORKDIR}/${P}" # needed for setting S later on
 
 inherit eutils flag-o-matic toolchain-funcs pam autotools user git-r3
