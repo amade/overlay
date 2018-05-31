@@ -13,7 +13,7 @@ SRC_URI="https://github.com/shimmerproject/${MY_PN}/archive/${MY_PN}-${PV}.tar.g
 LICENSE="public-domain GPL-1 GPL-2 GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE=""
+IUSE="xubuntu"
 
 RDEPEND=""
 DEPEND=""
@@ -22,6 +22,12 @@ S="${WORKDIR}/${MY_PN}-${MY_PN}-${PV}"
 
 src_install() {
 	insinto /usr/share/icons/
+
+	if use xubuntu ; then
+		unlink elementary-xfce/apps/48/xfce4-panel-menu.svg
+		dosym /usr/share/icons/elementary-xfce/places/48/distributor-logo-xubuntu.svg \
+			/usr/share/icons/elementary-xfce/apps/48/xfce4-panel-menu.svg
+	fi
 	dodoc README.md
 	for shade in elementary-xfce*; do
 		for doc in {AUTHORS,CONTRIBUTORS,LICENSE}; do
