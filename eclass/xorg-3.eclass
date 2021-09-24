@@ -1,16 +1,18 @@
 # Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# @ECLASS: xorg-2.eclass
+# @ECLASS: xorg-3.eclass
 # @MAINTAINER:
 # x11@gentoo.org
 # @AUTHOR:
 # Author: Tomáš Chvátal <scarabeus@gentoo.org>
 # Author: Donnie Berkholz <dberkholz@gentoo.org>
-# @SUPPORTED_EAPIS: 4 5
+# Author: Matt Turner <mattst88@gentoo.org>
+# @SUPPORTED_EAPIS: 7
+# @PROVIDES: multilib-minimal
 # @BLURB: Reduces code duplication in the modularized X11 ebuilds.
 # @DESCRIPTION:
-# This eclass makes trivial X ebuilds possible for apps, fonts, drivers,
+# This eclass makes trivial X ebuilds possible for apps, drivers,
 # and more. Many things that would normally be done in various functions
 # can be accessed by setting variables instead, such as patching,
 # running eautoreconf, passing options to configure and installing docs.
@@ -41,22 +43,23 @@ if [[ ${CATEGORY} = media-fonts ]]; then
 fi
 
 # @ECLASS-VARIABLE: XORG_MULTILIB
+# @PRE_INHERIT
 # @DESCRIPTION:
 # If set to 'yes', the multilib support for package will be enabled. Set
 # before inheriting this eclass.
 : ${XORG_MULTILIB:="no"}
 
 # we need to inherit autotools first to get the deps
-inherit autotools autotools-utils eutils libtool multilib toolchain-funcs \
-	flag-o-matic ${FONT_ECLASS} ${GIT_ECLASS}
+inherit autotools libtool multilib toolchain-funcs flag-o-matic \
+	${FONT_ECLASS} ${GIT_ECLASS}
 
 if [[ ${XORG_MULTILIB} == yes ]]; then
-	inherit autotools-multilib
+	inherit multilib-minimal
 fi
 
-EXPORTED_FUNCTIONS="src_unpack src_compile src_install pkg_postinst pkg_postrm"
+EXPORTED_FUNCTIONS="src_prepare src_configure src_unpack src_compile src_install pkg_postinst pkg_postrm"
 case "${EAPI:-0}" in
-	4|5) EXPORTED_FUNCTIONS="${EXPORTED_FUNCTIONS} src_prepare src_configure" ;;
+	7) ;;
 	*) die "EAPI=${EAPI} is not supported" ;;
 esac
 
@@ -66,37 +69,42 @@ EXPORT_FUNCTIONS ${EXPORTED_FUNCTIONS}
 IUSE=""
 
 # @ECLASS-VARIABLE: XORG_EAUTORECONF
+# @PRE_INHERIT
 # @DESCRIPTION:
 # If set to 'yes' and configure.ac exists, eautoreconf will run. Set
 # before inheriting this eclass.
 : ${XORG_EAUTORECONF:="no"}
 
 # @ECLASS-VARIABLE: XORG_BASE_INDIVIDUAL_URI
+# @PRE_INHERIT
 # @DESCRIPTION:
 # Set up SRC_URI for individual modular releases. If set to an empty
 # string, no SRC_URI will be provided by the eclass.
 : ${XORG_BASE_INDIVIDUAL_URI="https://www.x.org/releases/individual"}
 
 # @ECLASS-VARIABLE: XORG_MODULE
+# @PRE_INHERIT
 # @DESCRIPTION:
 # The subdirectory to download source from. Possible settings are app,
 # doc, data, util, driver, font, lib, proto, xserver. Set above the
 # inherit to override the default autoconfigured module.
 : ${XORG_MODULE:="auto"}
 if [[ ${XORG_MODULE} == auto ]]; then
-	case ${CATEGORY} in
-		app-doc)             XORG_MODULE=doc/     ;;
-		media-fonts)         XORG_MODULE=font/    ;;
-		x11-apps|x11-wm)     XORG_MODULE=app/     ;;
-		x11-misc|x11-themes) XORG_MODULE=util/    ;;
-		x11-base)            XORG_MODULE=xserver/ ;;
-		x11-drivers)         XORG_MODULE=driver/  ;;
-		x11-libs)            XORG_MODULE=lib/     ;;
-		*)                   XORG_MODULE=         ;;
+	case "${CATEGORY}/${P}" in
+		app-doc/*)               XORG_MODULE=doc/     ;;
+		media-fonts/*)           XORG_MODULE=font/    ;;
+		x11-apps/*|x11-wm/*)     XORG_MODULE=app/     ;;
+		x11-misc/*|x11-themes/*) XORG_MODULE=util/    ;;
+		x11-base/*)              XORG_MODULE=xserver/ ;;
+		x11-drivers/*)           XORG_MODULE=driver/  ;;
+		x11-libs/xcb-util-*)     XORG_MODULE=xcb/     ;;
+		x11-libs/*)              XORG_MODULE=lib/     ;;
+		*)                       XORG_MODULE=         ;;
 	esac
 fi
 
 # @ECLASS-VARIABLE: XORG_PACKAGE_NAME
+# @PRE_INHERIT
 # @DESCRIPTION:
 # For git checkout the git repository might differ from package name.
 # This variable can be used for proper directory specification
@@ -104,10 +112,17 @@ fi
 
 HOMEPAGE="https://www.x.org/wiki/ https://gitlab.freedesktop.org/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME}"
 
+# @ECLASS-VARIABLE: XORG_TARBALL_SUFFIX
+# @PRE_INHERIT
+# @DESCRIPTION:
+# Most X11 projects provide tarballs as tar.bz2 or tar.xz. This eclass defaults
+# to bz2.
+: ${XORG_TARBALL_SUFFIX:="bz2"}
+
 if [[ -n ${GIT_ECLASS} ]]; then
 	: ${EGIT_REPO_URI:="https://gitlab.freedesktop.org/xorg/${XORG_MODULE}${XORG_PACKAGE_NAME}.git"}
 elif [[ -n ${XORG_BASE_INDIVIDUAL_URI} ]]; then
-	SRC_URI="${XORG_BASE_INDIVIDUAL_URI}/${XORG_MODULE}${P}.tar.bz2"
+	SRC_URI="${XORG_BASE_INDIVIDUAL_URI}/${XORG_MODULE}${P}.tar.${XORG_TARBALL_SUFFIX}"
 fi
 
 : ${SLOT:=0}
@@ -133,8 +148,9 @@ WANT_AUTOMAKE="latest"
 for arch in ${XORG_EAUTORECONF_ARCHES}; do
 	EAUTORECONF_DEPENDS+=" ${arch}? ( ${EAUTORECONF_DEPEND} )"
 done
-DEPEND+=" ${EAUTORECONF_DEPENDS}"
-[[ ${XORG_EAUTORECONF} != no ]] && DEPEND+=" ${EAUTORECONF_DEPEND}"
+unset arch
+BDEPEND+=" ${EAUTORECONF_DEPENDS}"
+[[ ${XORG_EAUTORECONF} != no ]] && BDEPEND+=" ${EAUTORECONF_DEPEND}"
 unset EAUTORECONF_DEPENDS
 unset EAUTORECONF_DEPEND
 
@@ -144,8 +160,10 @@ if [[ ${FONT} == yes ]]; then
 	PDEPEND+=" media-fonts/font-alias"
 	DEPEND+=" >=media-fonts/font-util-1.2.0
 		>=x11-apps/mkfontscale-1.2.0"
+	BDEPEND+=" x11-apps/bdftopcf"
 
 	# @ECLASS-VARIABLE: FONT_DIR
+	# @PRE_INHERIT
 	# @DESCRIPTION:
 	# If you're creating a font package and the suffix of PN is not equal to
 	# the subdirectory of /usr/share/fonts/ it should install into, set
@@ -158,24 +176,16 @@ if [[ ${FONT} == yes ]]; then
 	FONT_DIR=${FONT_DIR/otf/OTF}
 	FONT_DIR=${FONT_DIR/type1/Type1}
 	FONT_DIR=${FONT_DIR/speedo/Speedo}
-
-	# Set up configure options, wrapped so ebuilds can override if need be
-	[[ -z ${FONT_OPTIONS} ]] && FONT_OPTIONS="--with-fontdir=\"${EPREFIX}/usr/share/fonts/${FONT_DIR}\""
-
-	[[ ${PN} = font-misc-misc || ${PN} = font-schumacher-misc || ${PN##*-} = 75dpi || ${PN##*-} = 100dpi || ${PN##*-} = cyrillic ]] && IUSE+=" nls"
 fi
-
-# If we're a driver package, then enable DRIVER case
-[[ ${PN} == xf86-video-* || ${PN} == xf86-input-* ]] && DRIVER="yes"
-
-DEPEND+=" virtual/pkgconfig"
+BDEPEND+=" virtual/pkgconfig"
 
 # @ECLASS-VARIABLE: XORG_DRI
+# @PRE_INHERIT
 # @DESCRIPTION:
 # Possible values are "always" or the value of the useflag DRI capabilities
 # are required for. Default value is "no"
 #
-# Eg. XORG_DRI="opengl" will pull all dri dependant deps for opengl useflag
+# Eg. XORG_DRI="opengl" will pull all dri dependent deps for opengl useflag
 : ${XORG_DRI:="no"}
 
 DRI_COMMON_DEPEND="
@@ -195,27 +205,21 @@ case ${XORG_DRI} in
 esac
 unset DRI_COMMON_DEPEND
 
-if [[ -n "${DRIVER}" ]]; then
-	COMMON_DEPEND+="
-		x11-base/xorg-server[xorg]
-	"
-fi
-if [[ -n "${DRIVER}" && ${PN} == xf86-input-* ]]; then
-	DEPEND+=" x11-base/xorg-proto"
-fi
-if [[ -n "${DRIVER}" && ${PN} == xf86-video-* ]]; then
-	COMMON_DEPEND+="
-		x11-libs/libpciaccess
-	"
-	DEPEND+=" x11-base/xorg-proto"
+if [[ ${PN} == xf86-video-* || ${PN} == xf86-input-* ]]; then
+	DEPEND+="  x11-base/xorg-proto"
+	RDEPEND+=" x11-base/xorg-server:="
+	COMMON_DEPEND+=" >=x11-base/xorg-server-1.20[xorg]"
+	[[ ${PN} == xf86-video-* ]] && COMMON_DEPEND+=" >=x11-libs/libpciaccess-0.14"
 fi
 
+
 # @ECLASS-VARIABLE: XORG_DOC
+# @PRE_INHERIT
 # @DESCRIPTION:
 # Possible values are "always" or the value of the useflag doc packages
 # are required for. Default value is "no"
 #
-# Eg. XORG_DOC="manual" will pull all doc dependant deps for manual useflag
+# Eg. XORG_DOC="manual" will pull all doc dependent deps for manual useflag
 : ${XORG_DOC:="no"}
 
 DOC_DEPEND="
@@ -232,24 +236,14 @@ case ${XORG_DOC} in
 	no)
 		;;
 	always)
-		DEPEND+=" ${DOC_DEPEND}"
+		BDEPEND+=" ${DOC_DEPEND}"
 		;;
 	*)
-		DEPEND+=" ${XORG_DOC}? ( ${DOC_DEPEND} )"
+		BDEPEND+=" ${XORG_DOC}? ( ${DOC_DEPEND} )"
 		IUSE+=" ${XORG_DOC}"
 		;;
 esac
 unset DOC_DEPEND
-
-if [[ ${DRIVER} == yes ]]; then
-	case ${EAPI} in
-		4)
-			;;
-		*)
-			RDEPEND+=" x11-base/xorg-server:="
-			;;
-	esac
-fi
 
 DEPEND+=" ${COMMON_DEPEND}"
 RDEPEND+=" ${COMMON_DEPEND}"
@@ -258,20 +252,21 @@ unset COMMON_DEPEND
 debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: DEPEND=${DEPEND}"
 debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: RDEPEND=${RDEPEND}"
 debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: PDEPEND=${PDEPEND}"
+debug-print "${LINENO} ${ECLASS} ${FUNCNAME}: BDEPEND=${BDEPEND}"
 
-# @FUNCTION: xorg-2_pkg_setup
+# @FUNCTION: xorg-3_pkg_setup
 # @DESCRIPTION:
 # Setup prefix compat
-xorg-2_pkg_setup() {
+xorg-3_pkg_setup() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	[[ ${FONT} == yes ]] && font_pkg_setup "$@"
 }
 
-# @FUNCTION: xorg-2_src_unpack
+# @FUNCTION: xorg-3_src_unpack
 # @DESCRIPTION:
 # Simply unpack source code.
-xorg-2_src_unpack() {
+xorg-3_src_unpack() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ -n ${GIT_ECLASS} ]]; then
@@ -283,95 +278,66 @@ xorg-2_src_unpack() {
 	[[ -n ${FONT_OPTIONS} ]] && einfo "Detected font directory: ${FONT_DIR}"
 }
 
-# @FUNCTION: xorg-2_patch_source
-# @DESCRIPTION:
-# Apply all patches
-xorg-2_patch_source() {
-	debug-print-function ${FUNCNAME} "$@"
-
-	# Use standardized names and locations with bulk patching
-	# Patch directory is ${WORKDIR}/patch
-	# See epatch() in eutils.eclass for more documentation
-	EPATCH_SUFFIX=${EPATCH_SUFFIX:=patch}
-
-	[[ -d "${EPATCH_SOURCE}" ]] && epatch
-}
-
-# @FUNCTION: xorg-2_reconf_source
+# @FUNCTION: xorg-3_reconf_source
 # @DESCRIPTION:
 # Run eautoreconf if necessary, and run elibtoolize.
-xorg-2_reconf_source() {
+xorg-3_reconf_source() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	case ${CHOST} in
 		*-aix* | *-winnt*)
 			# some hosts need full eautoreconf
 			[[ -e "./configure.ac" || -e "./configure.in" ]] \
-				&& AUTOTOOLS_AUTORECONF=1
+				&& XORG_EAUTORECONF=yes
 			;;
 		*)
 			# elibtoolize required for BSD
 			[[ ${XORG_EAUTORECONF} != no && ( -e "./configure.ac" || -e "./configure.in" ) ]] \
-				&& AUTOTOOLS_AUTORECONF=1
+				&& XORG_EAUTORECONF=yes
 			;;
 	esac
+
+	[[ ${XORG_EAUTORECONF} != no ]] && eautoreconf
+	elibtoolize --patch-only
 }
 
-# @FUNCTION: xorg-2_src_prepare
+# @FUNCTION: xorg-3_src_prepare
 # @DESCRIPTION:
 # Prepare a package after unpacking, performing all X-related tasks.
-xorg-2_src_prepare() {
+xorg-3_src_prepare() {
 	debug-print-function ${FUNCNAME} "$@"
 
-	xorg-2_patch_source
-	xorg-2_reconf_source
-	autotools-utils_src_prepare "$@"
+	default
+	xorg-3_reconf_source
 }
 
-# @FUNCTION: xorg-2_font_configure
+# @FUNCTION: xorg-3_font_configure
 # @DESCRIPTION:
 # If a font package, perform any necessary configuration steps
-xorg-2_font_configure() {
+xorg-3_font_configure() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if has nls ${IUSE//+} && ! use nls; then
-		if grep -q -s "disable-all-encodings" ${ECONF_SOURCE:-.}/configure; then
-			FONT_OPTIONS+="
-				--disable-all-encodings
-				--enable-iso8859-1"
-		else
-			FONT_OPTIONS+="
-				--disable-iso8859-2
-				--disable-iso8859-3
-				--disable-iso8859-4
-				--disable-iso8859-5
-				--disable-iso8859-6
-				--disable-iso8859-7
-				--disable-iso8859-8
-				--disable-iso8859-9
-				--disable-iso8859-10
-				--disable-iso8859-11
-				--disable-iso8859-12
-				--disable-iso8859-13
-				--disable-iso8859-14
-				--disable-iso8859-15
-				--disable-iso8859-16
-				--disable-jisx0201
-				--disable-koi8-r"
+		if ! grep -q -s "disable-all-encodings" ${ECONF_SOURCE:-.}/configure; then
+			die "--disable-all-encodings option not available in configure"
 		fi
+		FONT_OPTIONS+="
+			--disable-all-encodings
+			--enable-iso8859-1"
 	fi
 }
 
-# @FUNCTION: xorg-2_flags_setup
+# @FUNCTION: xorg-3_flags_setup
 # @DESCRIPTION:
 # Set up CFLAGS for a debug build
-xorg-2_flags_setup() {
+xorg-3_flags_setup() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	# Win32 require special define
 	[[ ${CHOST} == *-winnt* ]] && append-cppflags -DWIN32 -D__STDC__
 	# hardened ldflags
-	[[ ${PN} = xorg-server || -n ${DRIVER} ]] && append-ldflags -Wl,-Wl,-z,relro,-z,now
+	[[ ${PN} == xorg-server || ${PN} == xf86-video-* || ${PN} == xf86-input-* ]] \
+		&& append-ldflags -Wl,-z,relro,-z,now
 
 	# Quite few libraries fail on runtime without these:
 	if has static-libs ${IUSE//+}; then
@@ -381,31 +347,25 @@ xorg-2_flags_setup() {
 	fi
 }
 
-# @FUNCTION: xorg-2_src_configure
+multilib_src_configure() {
+	ECONF_SOURCE="${S}" econf "${econfargs[@]}"
+}
+
+# @FUNCTION: xorg-3_src_configure
 # @DESCRIPTION:
 # Perform any necessary pre-configuration steps, then run configure
-xorg-2_src_configure() {
+xorg-3_src_configure() {
 	debug-print-function ${FUNCNAME} "$@"
 
-	xorg-2_flags_setup
+	xorg-3_flags_setup
 
 	# @VARIABLE: XORG_CONFIGURE_OPTIONS
 	# @DESCRIPTION:
 	# Array of an additional options to pass to configure.
 	# @DEFAULT_UNSET
-	if [[ $(declare -p XORG_CONFIGURE_OPTIONS 2>&-) != "declare -a"* ]]; then
-		# fallback to CONFIGURE_OPTIONS, deprecated.
-		if [[ -n "${CONFIGURE_OPTIONS}" ]]; then
-			eqawarn "CONFIGURE_OPTIONS are deprecated. Please migrate to XORG_CONFIGURE_OPTIONS"
-			eqawarn "to preserve namespace."
-		fi
+	local xorgconfadd=("${XORG_CONFIGURE_OPTIONS[@]}")
 
-		local xorgconfadd=(${CONFIGURE_OPTIONS} ${XORG_CONFIGURE_OPTIONS})
-	else
-		local xorgconfadd=("${XORG_CONFIGURE_OPTIONS[@]}")
-	fi
-
-	[[ -n "${FONT}" ]] && xorg-2_font_configure
+	[[ -n "${FONT}" ]] && xorg-3_font_configure
 
 	# Check if package supports disabling of dep tracking
 	# Fixes warnings like:
@@ -424,7 +384,7 @@ xorg-2_src_configure() {
 		local no_static="--disable-static"
 	fi
 
-	local myeconfargs=(
+	local econfargs=(
 		${dep_track}
 		${selective_werror}
 		${no_static}
@@ -432,49 +392,65 @@ xorg-2_src_configure() {
 		"${xorgconfadd[@]}"
 	)
 
+	# Handle static-libs found in IUSE, disable them by default
+	if in_iuse static-libs; then
+		econfargs+=(
+			--enable-shared
+			$(use_enable static-libs static)
+		)
+	fi
+
 	if [[ ${XORG_MULTILIB} == yes ]]; then
-		autotools-multilib_src_configure "$@"
+		multilib-minimal_src_configure "$@"
 	else
-		autotools-utils_src_configure "$@"
+		econf "${econfargs[@]}" "$@"
 	fi
 }
 
-# @FUNCTION: xorg-2_src_compile
+multilib_src_compile() {
+	emake "$@" || die 'emake failed'
+}
+
+# @FUNCTION: xorg-3_src_compile
 # @DESCRIPTION:
 # Compile a package, performing all X-related tasks.
-xorg-2_src_compile() {
+xorg-3_src_compile() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ ${XORG_MULTILIB} == yes ]]; then
-		autotools-multilib_src_compile "$@"
+		multilib-minimal_src_compile "$@"
 	else
-		autotools-utils_src_compile "$@"
+		emake "$@" || die 'emake failed'
 	fi
 }
 
-# @FUNCTION: xorg-2_src_install
+multilib_src_install() {
+	emake DESTDIR="${D}" "${install_args[@]}" "$@" install || die "emake install failed"
+}
+
+# @FUNCTION: xorg-3_src_install
 # @DESCRIPTION:
 # Install a built package to ${D}, performing any necessary steps.
-# Creates a ChangeLog from git if using live ebuilds.
-xorg-2_src_install() {
+xorg-3_src_install() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	local install_args=( docdir="${EPREFIX}/usr/share/doc/${PF}" )
 
 	if [[ ${XORG_MULTILIB} == yes ]]; then
-		autotools-multilib_src_install "${install_args[@]}"
+		multilib-minimal_src_install "$@"
 	else
-		autotools-utils_src_install "${install_args[@]}"
+		emake DESTDIR="${D}" "${install_args[@]}" "$@" install || die "emake install failed"
+		einstalldocs
 	fi
 
-	if [[ -n ${GIT_ECLASS} ]]; then
-		pushd "${EGIT_STORE_DIR}/${EGIT_CLONE_DIR}" > /dev/null || die
-		git log ${EGIT_COMMIT} > "${S}"/ChangeLog
-		popd > /dev/null || die
+	# Many X11 libraries unconditionally install developer documentation
+	if [[ -d "${D}"/usr/share/man/man3 ]]; then
+		! in_iuse doc && eqawarn "ebuild should set XORG_DOC=doc since package installs library documentation"
 	fi
 
-	if [[ -e "${S}"/ChangeLog ]]; then
-		dodoc "${S}"/ChangeLog || die "dodoc failed"
+	if in_iuse doc && ! use doc; then
+		rm -rf "${D}"/usr/share/man/man3
+		rmdir "${D}"/usr{/share{/man,},} 2>/dev/null
 	fi
 
 	# Don't install libtool archives (even for modules)
@@ -483,11 +459,11 @@ xorg-2_src_install() {
 	[[ -n ${FONT} ]] && remove_font_metadata
 }
 
-# @FUNCTION: xorg-2_pkg_postinst
+# @FUNCTION: xorg-3_pkg_postinst
 # @DESCRIPTION:
 # Run X-specific post-installation tasks on the live filesystem. The
 # only task right now is some setup for font packages.
-xorg-2_pkg_postinst() {
+xorg-3_pkg_postinst() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ -n ${FONT} ]]; then
@@ -499,11 +475,11 @@ xorg-2_pkg_postinst() {
 	fi
 }
 
-# @FUNCTION: xorg-2_pkg_postrm
+# @FUNCTION: xorg-3_pkg_postrm
 # @DESCRIPTION:
 # Run X-specific post-removal tasks on the live filesystem. The only
 # task right now is some cleanup for font packages.
-xorg-2_pkg_postrm() {
+xorg-3_pkg_postrm() {
 	debug-print-function ${FUNCNAME} "$@"
 
 	if [[ -n ${FONT} ]]; then
