@@ -1,64 +1,50 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
-EAPI=6
+EAPI=7
 
-EGIT_REPO_URI="https://git.savannah.gnu.org/git/screen.git"
-EGIT_CHECKOUT_DIR="${WORKDIR}/${P}" # needed for setting S later on
-
-inherit eutils flag-o-matic toolchain-funcs pam autotools user git-r3
+inherit autotools flag-o-matic git-r3 pam tmpfiles
 
 DESCRIPTION="screen manager with VT100/ANSI terminal emulation"
 HOMEPAGE="https://www.gnu.org/software/screen/"
 
-LICENSE="GPL-2"
-SLOT="0"
+EGIT_REPO_URI="https://git.savannah.gnu.org/git/screen.git"
+EGIT_CHECKOUT_DIR="${WORKDIR}/${P}" # needed for setting S later on
+S="${WORKDIR}"/${P}/src
 KEYWORDS="~amd64"
+
+LICENSE="GPL-3+"
+SLOT="0"
 IUSE="pam selinux telnet utmp"
 
-CDEPEND="
-	>=sys-libs/ncurses-5.2:0=
+DEPEND=">=sys-libs/ncurses-5.2:=
+	virtual/libcrypt:=
 	pam? ( sys-libs/pam )"
-
-RDEPEND="${CDEPEND}
-	selinux? ( sec-policy/selinux-screen )
-	utmp? (
-		kernel_linux? ( sys-libs/libutempter )
-		kernel_FreeBSD? ( || ( >=sys-freebsd/freebsd-lib-9.0 sys-libs/libutempter ) )
-	)
-"
-
-DEPEND="${CDEPEND}
-	sys-apps/texinfo"
-
-RESTRICT="test"
-S="${WORKDIR}"/${P}/src
-
-pkg_setup() {
-	# Make sure utmp group exists, as it's used later on.
-	enewgroup utmp 406
-}
+RDEPEND="${DEPEND}
+	utmp? ( sys-libs/libutempter )
+	selinux? ( sec-policy/selinux-screen )"
+BDEPEND="sys-apps/texinfo"
 
 src_prepare() {
 	default
 
 	# sched.h is a system header and causes problems with some C libraries
 	mv sched.h _sched.h || die
-	sed -i \
-		-e '/include/ s:sched.h:_sched.h:' \
-		screen.h winmsg.c canvas.h sched.c || die
-	sed -i -e 's:sched.h:_sched.h:g' Makefile.in || die
+	sed -i '/include/ s:sched\.h:_sched.h:' \
+		screen.h winmsg.c window.h sched.c canvas.h || die
+	sed -i 's@[[:space:]]sched\.h@ _sched.h@' Makefile.in || die
 
-	# Fix manpage.
+	# Fix manpage
 	sed -i \
 		-e "s:/usr/local/etc/screenrc:${EPREFIX}/etc/screenrc:g" \
 		-e "s:/usr/local/screens:${EPREFIX}/tmp/screen:g" \
 		-e "s:/local/etc/screenrc:${EPREFIX}/etc/screenrc:g" \
 		-e "s:/etc/utmp:${EPREFIX}/var/run/utmp:g" \
-		-e "s:/local/screens/S-:${EPREFIX}/tmp/screen/S-:g" \
-		doc/screen.1 \
-		|| die
+		-e "s:/local/screens/S\\\-:${EPREFIX}/tmp/screen/S\\\-:g" \
+		doc/screen.1 || die
+
+	# disable musl dummy headers for utmp[x]
+	use elibc_musl && append-cppflags "-D_UTMP_H -D_UTMPX_H"
 
 	# reconfigure
 	eautoreconf
@@ -67,16 +53,16 @@ src_prepare() {
 src_configure() {
 	append-cppflags "-DMAXWIN=${MAX_SCREEN_WINDOWS:-100}"
 
-	[[ ${CHOST} == *-solaris* ]] && append-libs -lsocket -lnsl
-
-	econf \
-		--enable-socket-dir="${EPREFIX}/run/screen" \
-		--with-system_screenrc="${EPREFIX}/etc/screenrc" \
+	local myeconfargs=(
+		--enable-socket-dir="${EPREFIX}/run/${PN}"
+		--with-system_screenrc="${EPREFIX}/etc/screenrc"
 		--with-pty-mode=0620 \
 		--with-pty-group=5 \
 		$(use_enable pam) \
 		$(use_enable telnet) \
 		$(use_enable utmp)
+	)
+	econf "${myeconfargs[@]}"
 }
 
 src_compile() {
@@ -87,65 +73,41 @@ src_compile() {
 }
 
 src_install() {
+	local DOCS=(
+		README ChangeLog INSTALL TODO NEWS*
+		doc/{FAQ,README.DOTSCREEN,fdpat.ps,window_to_display.ps}
+	)
+
+	emake DESTDIR="${D}" SCREEN="${P}" install
+
 	local tmpfiles_perms tmpfiles_group
 
-	dobin screen
+	fperms 2755 /usr/bin/${P}
+	tmpfiles_perms="0775"
 
-	#if use multiuser || use prefix
-	#then
-		#fperms 4755 /usr/bin/screen
-		#tmpfiles_perms="0755"
-		#tmpfiles_group="root"
-	#else
-		fowners root:utmp /usr/bin/screen
-		fperms 2755 /usr/bin/screen
-		tmpfiles_perms="0775"
-		tmpfiles_group="utmp"
-	#fi
+	newtmpfiles - screen.conf <<<"d /tmp/screen ${tmpfiles_perms} root ${tmpfiles_group}"
 
-	dodir /etc/tmpfiles.d
-	echo "d /tmp/screen ${tmpfiles_perms} root ${tmpfiles_group}" \
-		>"${ED}"/etc/tmpfiles.d/screen.conf
-
-	insinto /usr/share/screen
+	insinto /usr/share/${PN}
 	doins terminfo/{screencap,screeninfo.src}
-	insinto /usr/share/screen/utf8encodings
-	doins utf8encodings/??
+
 	insinto /etc
 	doins "${FILESDIR}"/screenrc
 
-	pamd_mimic_system screen auth
+	if use pam; then
+		pamd_mimic_system screen auth
+	fi
 
-	dodoc \
-		README ChangeLog INSTALL TODO NEWS* \
-		doc/{FAQ,README.DOTSCREEN,fdpat.ps,window_to_display.ps}
-
-	doman doc/screen.1
-	doinfo doc/screen.info
+	dodoc "${DOCS[@]}"
 }
 
 pkg_postinst() {
-	if [[ -z ${REPLACING_VERSIONS} ]]
-	then
+	if [[ -z ${REPLACING_VERSIONS} ]]; then
 		elog "Some dangerous key bindings have been removed or changed to more safe values."
 		elog "We enable some xterm hacks in our default screenrc, which might break some"
 		elog "applications. Please check /etc/screenrc for information on these changes."
 	fi
 
-	# Add /tmp/screen in case it doesn't exist yet. This should solve
-	# problems like bug #508634 where tmpfiles.d isn't in effect.
-	local rundir="${EROOT%/}/run/screen"
-	#if [[ ! -d ${rundir} ]] ; then
-		#if use multiuser || use prefix ; then
-			#tmpfiles_group="root"
-		#else
-			tmpfiles_group="utmp"
-		#fi
-		mkdir -m 0775 "${rundir}"
-		chgrp ${tmpfiles_group} "${rundir}"
-	#fi
+	tmpfiles_process screen.conf
 
-	tmpfiles_group="utmp"
-	mkdir -m 0775 "${rundir}"
-	chgrp ${tmpfiles_group} "${rundir}"
+	ewarn "This revision changes the screen socket location to ${EROOT}/tmp/${PN}"
 }
